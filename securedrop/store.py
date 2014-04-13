@@ -94,6 +94,23 @@ def save_file_submission(sid, filename, stream, content_type, strip_metadata):
     return filename
 
 
+def save_signed_file_submission(sid, filename, stream, content_type, strip_metadata, sig_stream):
+    sanitized_filename = secure_filename(filename)
+    signature_filename = "%s.sig" % sanitized_filename
+    clean_file = sanitize_metadata(stream, content_type, strip_metadata)
+
+    s = StringIO()
+    with zipfile.ZipFile(s, 'w') as zf:
+        zf.writestr(sanitized_filename, clean_file.read() if clean_file else stream.read())
+        zf.writestr(signature_filename, sig_stream.read())
+    s.reset()
+
+    filename = "%s_doc.zip.gpg" % uuid.uuid4()
+    file_loc = path(sid, filename)
+    crypto_util.encrypt(config.JOURNALIST_KEY, s, file_loc)
+    return filename
+
+
 def save_message_submission(sid, message):
     filename = "%s_msg.gpg" % uuid.uuid4()
     msg_loc = path(sid, filename)

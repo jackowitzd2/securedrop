@@ -188,6 +188,7 @@ def normalize_timestamps(sid):
 def submit():
     msg = request.form['msg']
     fh = request.files['fh']
+    sh = request.files['sh']
     strip_metadata = True if 'notclean' in request.form else False
 
     fnames = []
@@ -196,10 +197,16 @@ def submit():
         fnames.append(store.save_message_submission(g.sid, msg))
         flash("Thanks! We received your message.", "notification")
     if fh:
-        fnames.append(store.save_file_submission(g.sid, fh.filename,
-            fh.stream, fh.content_type, strip_metadata))
-        flash("Thanks! We received your document '%s'."
-              % fh.filename or '[unnamed]', "notification")
+        if sh:
+            fnames.append(store.save_signed_file_submission(g.sid, fh.filename,
+                fh.stream, fh.content_type, strip_metadata, sh.stream))
+            flash("Thanks! We received your credibly leaked document '%s'."
+                  % fh.filename or '[unnamed]', "notification")
+        else:
+            fnames.append(store.save_file_submission(g.sid, fh.filename,
+                fh.stream, fh.content_type, strip_metadata))
+            flash("Thanks! We received your document '%s'."
+                  % fh.filename or '[unnamed]', "notification")
 
     for fname in fnames:
         submission = Submission(g.source, fname)
